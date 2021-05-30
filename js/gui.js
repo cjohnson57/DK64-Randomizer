@@ -28,9 +28,7 @@ function load_inital() {
     } else {
       var jsonresp = JSON.parse(savedUserJsonString);
       for (var k in jsonresp) {
-        try {
-          document.getElementsByName(k)[0].value = jsonresp[k];
-        } catch (e) {}
+        document.getElementsByName(k)[0].value = jsonresp[k];
       }
     }
     progression_clicked();
@@ -116,7 +114,11 @@ function generate_asm(asm) {
     });
   });
 }
-function submitdata() {
+
+function submitdata(downloadlankyfile) {
+  if (downloadlankyfile) {
+    downloadlankyfile = document.getElementById("downloadjson").checked
+  }
   $("input:disabled, select:disabled").each(function () {
     $(this).removeAttr("disabled");
   });
@@ -139,7 +141,6 @@ function submitdata() {
               $("#progressmodal").modal("hide");
               $("#patchprogress").removeClass("bg-danger");
               $("#patchprogress").width("0%");
-              $("#progress-text").text("");
             }, 5000);
           }, 1000);
         } else {
@@ -150,18 +151,56 @@ function submitdata() {
       });
     }, 1000);
     JSONData = JSON.parse(queryStringToJSON(form));
+    if (downloadlankyfile) {
+      downloadToFile(JSON.stringify(JSONData), 'dk64r-settings-'+JSONData["seed"]+'.lanky', 'text/plain');
+    }
     delete JSONData["seed"];
     setCookie("settings", JSON.stringify(JSONData), 30);
   }
 }
+function loadlankyfile() {
+  $("input:disabled, select:disabled").each(function () {
+    $(this).removeAttr("disabled");
+  });
+  if ($("#input-file-rom").val() == "") {
+    $("#input-file-rom").select();
+  } else {
+    var newInput = document.createElement("input")
+    newInput.setAttribute("type","file")
+    newInput.setAttribute("accept",".lanky")
+    newInput.setAttribute("id","temp-file-loader")
+    newInput.style.display = "none"
+    newInput.addEventListener("change", function() {
+      var fr = new FileReader();
+      fr.onload = function() {
+        var data = fr.result;
+        submitlankyfile(JSON.parse(fr.result));
+        document.getElementById("temp-file-loader").remove()
+      };
+      fr.readAsText(document.getElementById("temp-file-loader").files[0]);
+    })
+    document.getElementsByTagName("body")[0].appendChild(newInput)
+    newInput.click()
+  }
+}
+
+function submitlankyfile(json_data) {
+  console.log(json_data)
+  for (var k in json_data) {
+    document.getElementsByName(k)[0].value = json_data[k];
+  }
+  var qs = ""
+  submitdata(false)
+}
+
 const downloadToFile = (content, filename, contentType) => {
   const a = document.createElement("a");
-  const file = new Blob([content], { type: contentType });
-  a.href = URL.createObjectURL(file);
-  a.download = filename;
+  const file = new Blob([content], {type: contentType});
+  a.href = URL.createObjectURL(file)
+  a.download = filename
   a.click();
   URL.revokeObjectURL(a.href);
-};
+}
 
 function queryStringToJSON(qs) {
   qs = qs || location.search.slice(1);
@@ -185,6 +224,7 @@ function queryStringToJSON(qs) {
   });
   return JSON.stringify(result);
 }
+
 function getCookie(cname) {
   var name = cname + "=";
   var decodedCookie = decodeURIComponent(document.cookie);
@@ -206,4 +246,43 @@ function setCookie(cname, cvalue, exdays) {
   d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);
   var expires = "expires=" + d.toUTCString();
   document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+var load_selectors = document.getElementsByClassName("load_selector");
+const selection_data = [
+  {
+    "click_id": "selector_newseed",
+    "show_ids": [
+      "generateseed",
+      "downloadsettings"
+    ]
+  },
+  {
+    "click_id": "selector_patchfile",
+    "show_ids": [
+      "loadjsonfile",
+    ]
+  }
+]
+for (var i = 0; i < load_selectors.length; i++) {
+    load_selectors[i].addEventListener("click", (evt) => {
+        var _load_selectors = document.getElementsByClassName("load_selector")
+        for (var j = 0; j < _load_selectors.length; j++) {
+            _load_selectors[j].classList.remove("load_selected")
+        }
+        evt.target.classList.add("load_selected");
+        const evt_id = evt.target.getAttribute("id")
+        const evt_foundshow = selection_data.find(item => item.click_id == evt_id)
+        const evt_foundhide = selection_data.filter(item => item.click_id != evt_id)
+        if (evt_foundshow) {
+          evt_foundshow.show_ids.forEach(item => {
+            document.getElementById(item).classList.remove("hide")
+          })
+        }
+        evt_foundhide.forEach(item => {
+          item.show_ids.forEach(item2 => {
+            document.getElementById(item2).classList.add("hide")
+          })
+        })
+    }, false)
 }

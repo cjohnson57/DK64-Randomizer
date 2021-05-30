@@ -62,3 +62,27 @@ footer {
     flex: 0 0 50px;
     margin-top: auto;
 }
+
+ul.load_choser {
+    list-style: none;
+}
+
+ul.load_choser li.load_selector {
+    display: inline;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: 0.5s ease-in-out background;
+}
+
+ul.load_choser li.load_selector:hover {
+    background-color: #e3e3e3;
+}
+
+ul.load_choser li.load_selector.load_selected {
+    border-bottom: 4px solid midnightblue;
+    border-radius: 3px;
+}
+
+.hide {
+    display: none;
+}

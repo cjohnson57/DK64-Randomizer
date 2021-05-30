@@ -145,6 +145,9 @@ spoilerlog*.txt
 settings*.asm
 settings*.json
 *.z64
+*.n64
+*.v64
+*.lanky
 *.bin
 *.bin.gz
 codeOutput.txt
