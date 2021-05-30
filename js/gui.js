@@ -164,25 +164,28 @@ function loadlankyfile() {
   });
   if ($("#input-file-rom").val() == "") {
     $("#input-file-rom").select();
+  } else if ($("#jsonfileloader").val() == "") {
+    $("#jsonfileloader").select();
   } else {
-    var newInput = document.createElement("input")
-    newInput.setAttribute("type","file")
-    newInput.setAttribute("accept",".lanky")
-    newInput.setAttribute("id","temp-file-loader")
-    newInput.style.display = "none"
-    newInput.addEventListener("change", function() {
-      var fr = new FileReader();
-      fr.onload = function() {
-        var data = fr.result;
-        submitlankyfile(JSON.parse(fr.result));
-        document.getElementById("temp-file-loader").remove()
-      };
-      fr.readAsText(document.getElementById("temp-file-loader").files[0]);
-    })
-    document.getElementsByTagName("body")[0].appendChild(newInput)
-    newInput.click()
+    var file_hook = document.getElementById("jsonfileloader")
+    var fr = new FileReader();
+    fr.onload = function() {
+      submitlankyfile(JSON.parse(fr.result));
+    };
+    fr.readAsText(file_hook.files[0]);
   }
 }
+
+var file_hook = document.getElementById("jsonfileloader")
+file_hook.addEventListener("change", function() {
+  var fr = new FileReader();
+  fr.onload = function() {
+    for (var k in JSON.parse(fr.result)) {
+      document.getElementsByName(k)[0].value = JSON.parse(fr.result)[k];
+    }
+  };
+  fr.readAsText(file_hook.files[0]);
+})
 
 function submitlankyfile(json_data) {
   console.log(json_data)
@@ -261,6 +264,8 @@ const selection_data = [
     "click_id": "selector_patchfile",
     "show_ids": [
       "loadjsonfile",
+      "jsonfileloader",
+      "formbreak"
     ]
   }
 ]
