@@ -34,6 +34,9 @@
 [CutsceneActive]: 0x807444EC
 [CutsceneTimer]: 0x807476F0
 [CutsceneType]: 0x807476FC
+[PreviousCameraState]: 0x807F5CF0
+[CurrentCameraState]: 0x807F5CF2
+[CameraStateChangeTimer]: 0x807F5CEC
 [ParentMap]: 0x8076A172
 [ActorSpawnerArrayPointer]: 0x807FDC8C
 [DestinationMap]: 0x807444E4
@@ -50,6 +53,9 @@
 [HUDPointer]: 0x80754280
 [LoadedActorArray]: 0x807FB930
 [LoadedActorCount]: 0x807FBB34 // u16
+[ObjectModel2Pointer]: 0x807F6000 // u32
+[ObjectModel2Count]: 0x807F6004 // u32
+[BossKongArray]: 0x807446F0 // Array
 
 // New Variables
 [TestVariable]: 0x807FFFFC
@@ -91,12 +97,19 @@ J Start
 J   LoadInAdditionalFile
 NOP
 
+.org 0x80714500 // Starting Kong
+J   ChangeStartingKong
+NOP
+
 .org 0x8000DE88 // 0x00DE88 > 0x00EDDA. EDD1 seems the safe limit before overwriting data.
 
 Start:
     // Run the code we replaced
     JAL     0x805FC2B0
     NOP
+    LI      a0, 0x08176E63
+    SW      a0, 0x80714500
+    SW      r0, 0x80714504
     JAL     RandoLevelOrder
     NOP
     JAL     UnlockKongs
@@ -114,6 +127,14 @@ Start:
     JAL     FixCastleAutowalk
     NOP
     JAL     IslesSpawn
+    NOP
+    JAL     KongOrder_IslesOverworldChanges
+    NOP
+    JAL     KongOrder_JapesChanges
+    NOP
+    JAL     ApplyBossKongToMemory
+    NOP
+    JAL     FreeCutscenesCancel
     NOP
     LW      a0, @CurrentMap
     LI      a1, 0x50 // Main Menu
@@ -141,6 +162,16 @@ Start:
     NOP
     JAL     ApplyFastStart
     NOP
+    // Open Guitar Door
+    LI      a0, 0x4E
+    LI      a1, 1
+    JAL     @SetFlag
+    LI      a2, 0
+    // Open Galleon Peanut Gate
+    LI      a0, 0xA1
+    LI      a1, 1
+    JAL     @SetFlag
+    LI      a2, 0
 
     Finish:
         J       0x805FC15C // retroben's hook but up a few functions
@@ -601,7 +632,6 @@ TagAnywhere:
         LW      t0, @VarStorage0
         ADDIU   a0, v0, 0
         ADDI    a3, a3, -1
-        SW      a3, @TestVariable
         BEQZ    a3, TagAnywhere_Finish
         NOP
         BEQZ    a0, TagAnywhere_CharacterLoop
@@ -784,6 +814,9 @@ QOLChangesShorten:
         SW      r0, 0x806EFB88 // Animation Write
         SW      r0, 0x806EFC0C // Change Rotation
         SW      r0, 0x806EFBA8 // Control State Progress
+
+    FasterTnSTurnIns:
+        SW      r0, 0x806BE3E0 // Turn off check for once every 4 frames
 
     // Remove First Time Boss Cutscenes
     ShortenBossCutscenes:
@@ -991,6 +1024,316 @@ CodedSetPermFlag:
     JR      ra
     NOP
 
+// Kong Rando Stuff
+
+ChangeStartingKong:
+    LA      a0, KongOrder
+    LBU     a0, 0x0 (a0)
+    SB      a0, 0xE77C (at)
+    J       0x80714508
+    LBU     a3, 0x67C8 (a3)
+
+KongOrder_IslesOverworldChanges:
+    SW      ra, @ReturnAddress2
+    LW      a0, @CurrentMap
+    LI      a1, 0x22
+    BNE     a0, a1, KongOrder_IslesOverworldChanges_Finish
+    NOP
+    LW      a0, @ObjectTimer
+    LI      a1, 1
+    BNE     a0, a1, KongOrder_IslesOverworldChanges_Finish
+    NOP
+    JAL     ConvertIDToIndex
+    LI      a0, 4
+    LI      t0, -1
+    BEQ     v0, t0, KongOrder_IslesOverworldChanges_Finish
+    NOP
+    LI      t0, 0x90
+    MULTU   v0, t0
+    MFLO    t0
+    LW      t3, @ObjectModel2Pointer
+    ADD     t3, t3, t0
+    SB      r0, 0x8C (t3)
+
+    KongOrder_IslesOverworldChanges_Finish:
+        LW      ra, @ReturnAddress2
+        JR      ra
+        NOP
+
+KongOrder_JapesChanges:
+    SW      ra, @ReturnAddress2
+    LW      a0, @CurrentMap
+    LI      a1, 0x7
+    BNE     a0, a1, KongOrder_JapesChanges_Finish
+    NOP
+    LW      a0, @ObjectTimer
+    LI      a1, 1
+    BNE     a0, a1, KongOrder_JapesChanges_Finish
+    NOP
+    JAL     ConvertIDToIndex
+    LI      a0, 0x69
+    LI      t0, -1
+    BEQ     v0, t0, KongOrder_JapesChanges_Switches
+    NOP
+    LI      t0, 0x90
+    MULTU   v0, t0
+    MFLO    t0
+    LW      t3, @ObjectModel2Pointer
+    ADD     t3, t3, t0
+    SB      r0, 0x8C (t3)
+
+    KongOrder_JapesChanges_Switches:
+        LI      t0, 3 // Counter
+        LI      t8, 0x30
+
+        KongOrder_JapesChanges_Switches_Loop:
+            SW      t0, @VarStorage0
+            SW      t8, @VarStorage1
+            JAL     ConvertIDToIndex
+            ADDIU   a0, t8, 0
+            LI      t0, -1
+            BEQ     v0, t0, KongOrder_JapesChanges_Switches_Increment
+            NOP
+            LI      t9, 0x90
+            MULTU   v0, t9
+            MFLO    t9
+            LW      t3, @ObjectModel2Pointer
+            ADD     t3, t3, t9
+            LA      t9, KongOrder
+            LBU     t6, 0x0 (t9) // Kong that is performing the freeing
+            LBU     t7, 0x1 (t9) // Kong to be freed
+            SLL     t7, t7, 1
+            LA      t9, FreeKongFlags
+            ADD     t7, t9, t7
+            LHU     t7, 0x0 (t7)
+            LA      t9, Gun_Pellets
+            ADD     t6, t9, t6
+            LBU     t6, 0x0 (t6)
+            LW      t3, 0x7C (t3)
+            BEQZ    t3, KongOrder_JapesChanges_Switches_Increment
+            NOP
+            LW      t3, 0xA0 (t3)
+            BEQZ    t3, KongOrder_JapesChanges_Switches_Increment
+            NOP
+            LW      t3, 0x4C (t3)
+            BEQZ    t3, KongOrder_JapesChanges_Switches_Increment
+            NOP
+            SH      t7, 0x14 (t3)
+            LW      t3, 0x4C (t3)
+            BEQZ    t3, KongOrder_JapesChanges_Switches_Increment
+            NOP
+            SH      t7, 0x14 (t3)
+            LW      t3, 0x4C (t3)
+            BEQZ    t3, KongOrder_JapesChanges_Switches_Increment
+            NOP
+            SH      t6, 0xC (t3)
+            LW      t3, 0x4C (t3)
+            BEQZ    t3, KongOrder_JapesChanges_Switches_Increment
+            NOP
+            SH      t6, 0xC (t3)
+
+        KongOrder_JapesChanges_Switches_Increment:
+            LW      t0, @VarStorage0
+            LW      t8, @VarStorage1
+            ADDI    t0, t0, -1
+            BEQZ    t0, KongOrder_JapesChanges_BambooGate
+            ADDIU   t8, t8, 1
+            B       KongOrder_JapesChanges_Switches_Loop
+            NOP
+
+    KongOrder_JapesChanges_BambooGate:
+        JAL     ConvertIDToIndex
+        LI      a0, 0x47
+        LI      t0, -1
+        BEQ     v0, t0, KongOrder_JapesChanges_Finish
+        NOP
+        LI      t0, 0x90
+        MULTU   v0, t0
+        MFLO    t0
+        LW      t3, @ObjectModel2Pointer
+        ADD     t3, t3, t0
+        LA      t9, KongOrder
+        LBU     t7, 0x1 (t9) // Kong to be freed
+        SLL     t7, t7, 1
+        LA      t9, FreeKongFlags
+        ADD     t7, t9, t7
+        LHU     t7, 0x0 (t7)
+        LW      t3, 0x7C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0xA0 (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        SH      t7, 0xC (t3)
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        SH      t7, 0xC (t3)
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        LW      t3, 0x4C (t3)
+        BEQZ    t3, KongOrder_JapesChanges_Finish
+        NOP
+        SH      t7, 0x36 (t3)
+        
+    KongOrder_JapesChanges_Finish:
+        LW      ra, @ReturnAddress2
+        JR      ra
+        NOP
+
+FreeCutscenesCancel:
+    SW      ra, @ReturnAddress2
+    LBU     t0, @CutsceneActive
+    BEQZ    t0, FreeCutscenesCancel_Finish
+    NOP
+    LW      t0, @CutsceneType
+    LI      t3, 0x807F5B10
+    BNE     t0, t3, FreeCutscenesCancel_Finish
+    NOP
+    LA      a0, AutoCancelCutscenes
+    
+    FreeCutscenesCancel_Loop:
+        LHU     t6, 0x0 (a0)
+        ANDI    t7, t6, 0x00FF
+        ANDI    t8, t6, 0xFF00
+        SRA     t8, t8, 8
+        LHU     t3, @CutsceneIndex
+        BNE     t7, t3, FreeCutscenesCancel_Increment
+        NOP
+        LW      t3, @CurrentMap
+        BNE     t8, t3, FreeCutscenesCancel_Increment
+        NOP
+
+    FreeCutscenesCancel_Increment:
+        ADDIU   a0, a0, 2
+        LHU     t6, 0x0 (a0)
+        BEQZ    t6, FreeCutscenesCancel_Finish
+        NOP
+        B       FreeCutscenesCancel_Loop
+        NOP
+
+    FreeCutscenesCancel_Cancel:
+        JAL     CancelCutscene
+        NOP
+
+    FreeCutscenesCancel_Finish:
+        LW      ra, @ReturnAddress2
+        JR      ra
+        NOP
+
+ApplyBossKongToMemory:
+    LA      a0, BossKongs
+    LI      a1, 7
+    LI      a2, @BossKongArray
+
+    ApplyBossKongToMemory_Loop:
+        LBU     t0, 0x0 (a0)
+        SB      t0, 0x0 (a2)
+        ADDI    a1, a1, -1
+        BEQZ    a1, ApplyBossKongToMemory_Finish
+        ADDIU   a0, a0, 1
+        B       ApplyBossKongToMemory_Loop
+        ADDIU   a2, a2, 1
+
+    ApplyBossKongToMemory_Finish:
+        JR      ra
+        NOP
+
+CancelCutscene:
+    LBU     a0, @CutsceneActive
+    BEQZ    a0, CancelCutscene_Finish
+    NOP
+    LH      a0, @CutsceneIndex
+    LW      a1, @CutsceneType
+    BEQZ    a1, CancelCutscene_Finish
+    NOP
+    LW      a1, 0xD0 (a1) // Cutscene Databank
+    BEQZ    a1, CancelCutscene_Finish
+    NOP
+    LI      a2, 0xC
+    MULTU   a0, a2
+    MFLO    a2
+    ADD     a1, a1, a2
+    LH      a1, 0x0 (a1) // Required Cam State
+    SH      a1, @CurrentCameraState
+    SH      a1, @PreviousCameraState
+    ADDI    a1, a1, -1
+    SH      r0, @CameraStateChangeTimer
+    LW      a0, @Player
+    BEQZ    a0, CancelCutscene_Finish
+    NOP
+    LI      a1, 0xC
+    SB      a1, 0x154 (a0)
+
+    CancelCutscene_Finish:
+        JR      ra
+        NOP
+
+ConvertIDToIndex:
+    // a0 = ID
+    LW      t0, @ObjectModel2Pointer
+    LW      t3, @ObjectModel2Count
+    LI      t9, 0
+
+    ConvertIDToIndex_Loop:
+        LHU     t7, 0x8A (t0)
+        BEQ     t7, a0, ConvertIDToIndex_GrabIndex
+        NOP
+        ADDI    t3, t3, -1
+        BEQZ    t3, ConvertIDToIndex_BadIndex
+        ADDIU   t0, t0, 0x90
+        B       ConvertIDToIndex_Loop
+        ADDIU   t9, t9, 1
+
+    ConvertIDToIndex_BadIndex:
+        B       ConvertIDToIndex_Finish
+        LI      v0, -1
+
+    ConvertIDToIndex_GrabIndex:
+        B       ConvertIDToIndex_Finish
+        ADDIU   v0, t9, 0
+
+    ConvertIDToIndex_Finish:
+        JR      ra
+        NOP
+
 .align
 GunBitfields:
     .word 0x807FC952 // DK
@@ -998,6 +1341,39 @@ GunBitfields:
     .word 0x807FCA0E // Lanky
     .word 0x807FCA6C // Tiny
     .word 0x807FCACA // Chunky
+
+.align
+KongOrder:
+    .byte 1 // Starting Kong
+    .byte 0 // Japes
+    .byte 2 // Llama Temple
+    .byte 3 // Tiny Temple
+    .byte 4 // Factory
+
+.align
+AutoCancelCutscenes:
+    .half 0x0705 // Japes Coconut Switches
+    .half 0x0706 // Japes Free Diddy
+    .half 0x1403 // Free Lanky
+    .half 0x1006 // Free Tiny
+    .half 0x1A08 // Free Chunky
+    .half 0
+
+.align
+Gun_Pellets:
+    .byte 48 // Coconut
+    .byte 36 // Peanut
+    .byte 42 // Grape
+    .byte 43 // Feather
+    .byte 38 // Pineapple
+
+.align
+FreeKongFlags:
+    .half 0x0181 // DK
+    .half 0x0006 // Diddy
+    .half 0x0046 // Lanky
+    .half 0x0042 // Tiny
+    .half 0x0075 // Chunky
 
 .align
 HandStatesNoGun:

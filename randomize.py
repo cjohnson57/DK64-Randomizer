@@ -31,6 +31,23 @@ def randomize(post_data):
         "Crystal Caves",
         "Creepy Castle",
     ]
+    boss_door_permits = [
+        [0,1,2,3,4], # AD1
+        [0,1,2,3,4], # Dog 1
+        [1,3,4], # MJ
+        [1,2,3,4], # Pufftoss
+        [4], # Dog 2
+        [0,1,2,4], # AD2
+        [0,1,2,3,4], # KKO
+    ]
+    default_boss_kongs = [0,1,3,2,4,0,2]
+    kongNames = [
+        "DK",
+        "Diddy",
+        "Lanky",
+        "Tiny",
+        "Chunky"
+    ]
 
     # Arrays for Finalized Setting Values
     finalBLocker = []
@@ -46,6 +63,7 @@ def randomize(post_data):
         "0x013D",
     ]
     finalLevels = levelEntrances[:]
+    finalBossKongs = []
 
     # Open default mod file
     with open("./patches/asmFunctions.asm", "r") as file:
@@ -80,9 +98,9 @@ def randomize(post_data):
         finalTNS = [60, 120, 200, 250, 300, 350, 400]
 
     # Shuffle Level Progression
+    seed(str(post_data.get("seed")) + str(post_data))
     if post_data.get("randomize_progression"):
         asm += ".align" + "\n" + "RandoOn:" + "\n" + "\t" + ".byte 1" + "\n" + "\n"  # Run Randomizer in ASM
-        seed(str(post_data.get("seed")) + str(post_data))
         shuffle(finalLevels)
         logdata += "Level Order: " + "\n"
         asm += ".align" + "\n" + "LevelOrder:" + "\n"
@@ -115,6 +133,23 @@ def randomize(post_data):
         asm += "\n" + "\n"
     else:
         asm += ".align" + "\n" + "RandoOn:" + "\n" + "\t" + ".byte 0" + "\n" + "\n"  # Dont run Randomizer in ASM
+
+    # Boss Kongs for ASM
+    asm += ".align" + "\n" + "BossKongs:" + "\n"
+    if post_data.get("randomize_boss_kongs"):
+        logdata += "\n" + "\n" + "Boss Kongs: " + "\n"
+        for level in range(7):
+            level_permit_copy = boss_door_permits[level][:]
+            shuffle(level_permit_copy)
+            kong_for_boss = level_permit_copy[0]
+            asm += "\t" + ".byte " + str(kong_for_boss) + "\n"
+            logdata += "\t" + levelEntrances[level] + ": " + kongNames[kong_for_boss] + "\n"
+            finalBossKongs.append(kong_for_boss)
+    else:
+        finalBossKongs = default_boss_kongs[:]
+        for level in range(7):
+            kong_for_boss = default_boss_kongs[level]
+            asm += "\t" + ".byte " + str(kong_for_boss) + "\n"
 
     # Set B Lockers in ASM
     asm += ".align" + "\n" + "BLockerDefaultAmounts:" + "\n"
@@ -235,6 +270,7 @@ def randomize(post_data):
         asm += "\t" + ".half 0x180" + "\n"  # Cranky has given Sim Slam
         asm += "\t" + ".half 385" + "\n"  # DK Free
     asm += "\t" + ".half 0" + "\n"  # Null Terminator (required)
+    print(asm)
     if post_data.get("generate_spoilerlog"):
         document["nav-spoiler-tab"].style.display = ""
         document["spoiler_log_text"].text = logdata

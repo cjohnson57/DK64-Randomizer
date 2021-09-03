@@ -19,8 +19,8 @@ def update_disabled_progression():
             del document["seed_button"].attrs["disabled"]
         except Exception:
             pass
-        document["unlock_all_kongs"].attrs["disabled"] = "disabled"
-        document["unlock_all_kongs"].checked = True
+        #document["unlock_all_kongs"].attrs["disabled"] = "disabled"
+        #document["unlock_all_kongs"].checked = True
     else:
         document["seed"].attrs["disabled"] = "disabled"
         document["seed_button"].attrs["disabled"] = "disabled"

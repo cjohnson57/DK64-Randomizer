@@ -25,7 +25,7 @@ class Misc:
         tooltip = """This option will make all 5 kongs available from the start without freeing them.
             The golden bananas awarded when freeing specific kongs still must be collected even with this option on.
             If using Level Progression Randomizer and playing through glitchless, this option is forced on."""
-        return self.response(Value=True, ToolTip=self._unindent(tooltip), Enabled="disabled")
+        return self.response(Value=True, ToolTip=self._unindent(tooltip), Enabled="")
 
     def generate_spoilerlog(self):
         """Response Data for form info."""

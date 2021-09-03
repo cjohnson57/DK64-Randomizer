@@ -28,6 +28,12 @@ class Randomizers:
             Hideout Helm will always be the final level."""
         return self.response(Value=True, ToolTip=self._unindent(tooltip), Enabled="")
 
+    def randomize_boss_kongs(self):
+        tooltip = """This option will randomize the kong that will fight each boss.
+            Some kongs will not be able to fight certain bosses for a number of reasons.
+            For example, Chunky will always fight the Fungi Boss)"""
+        return self.response(Value=True, ToolTip=self._unindent(tooltip), Enabled="")
+
     def generate_seed_tooltip(self):
         """Response Data for form info."""
         tooltip = """You can either manually enter a 6 digit number or click the button to the right to pick one for you.

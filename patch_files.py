@@ -125,20 +125,26 @@ def convert_asm(asm):
               end
           end
           lips(code_filename, codeWriter);
-          local formatted_code = '';
-          for k,v in pairs(code) do
-            local pair_string = '';
-            for key, value in pairs(v) do
-              if(key == 1)
-              then
-                pair_string = pair_string .. value .. ':';
-              else
-                pair_string = pair_string .. value;
+          if #code == 0 then
+                print(result);
+                print("The code did not compile correctly, check for errors in your source.");
+          else
+            local formatted_code = '';
+              for k,v in pairs(code) do
+                local pair_string = '';
+                for key, value in pairs(v) do
+                  if(key == 1)
+                  then
+                    pair_string = pair_string .. value .. ':';
+                  else
+                    pair_string = pair_string .. value;
+                  end
+                end
+                formatted_code = formatted_code .. pair_string .. '\\n';
               end
-            end
-            formatted_code = formatted_code .. pair_string .. '\\n';
-          end
-          window.asmcode = formatted_code;
+              window.asmcode = formatted_code;
+         end
+          
       end
       convert([["""
         + asm
