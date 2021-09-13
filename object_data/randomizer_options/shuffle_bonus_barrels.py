@@ -15,7 +15,7 @@ def set_bonus_barrels(asm: str, post_data: dict):
     barrelLocationsTiny = [x for x in barrel_locations if x.uses_tiny == True]
     barrelLocationsChunky = [x for x in barrel_locations if x.uses_chunky == True]
 
-    finalBarrelDict = [ ]
+    finalBarrelList = [ ]
     barrelSpoilerLog = [ ]
 
     logdata = str()
@@ -24,7 +24,7 @@ def set_bonus_barrels(asm: str, post_data: dict):
     
     for x in barrelLocationsDK:
         pickRandomBarrelDK = random.choice(barrelGamesDK)
-        finalBarrelDict.append(
+        finalBarrelList.append(
             {
                 "minigame_map_index": pickRandomBarrelDK.map_index,
                 "barrel_map_location": x.location_map,
@@ -35,7 +35,7 @@ def set_bonus_barrels(asm: str, post_data: dict):
 
     for x in barrelLocationsDiddy:
         pickRandomBarrelDiddy = random.choice(barrelGamesDiddy)
-        finalBarrelDict.append(
+        finalBarrelList.append(
             {
                 "minigame_map_index": pickRandomBarrelDiddy.map_index,
                 "barrel_map_location": x.location_map,
@@ -46,7 +46,7 @@ def set_bonus_barrels(asm: str, post_data: dict):
 
     for x in barrelLocationsLanky:
         pickRandomBarrelLanky = random.choice(barrelGamesLanky)
-        finalBarrelDict.append(
+        finalBarrelList.append(
             {
                 "minigame_map_index": pickRandomBarrelLanky.map_index,
                 "barrel_map_location": x.location_map,
@@ -57,7 +57,7 @@ def set_bonus_barrels(asm: str, post_data: dict):
 
     for x in barrelLocationsTiny:
         pickRandomBarrelTiny = random.choice(barrelGamesTiny)
-        finalBarrelDict.append(
+        finalBarrelList.append(
             {
                 "minigame_map_index": pickRandomBarrelTiny.map_index,
                 "barrel_map_location": x.location_map,
@@ -68,7 +68,7 @@ def set_bonus_barrels(asm: str, post_data: dict):
 
     for x in barrelLocationsChunky:
         pickRandomBarrelChunky = random.choice(barrelGamesChunky)
-        finalBarrelDict.append(
+        finalBarrelList.append(
             {
                 "minigame_map_index": pickRandomBarrelChunky.map_index,
                 "barrel_map_location": x.location_map,
