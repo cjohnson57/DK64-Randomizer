@@ -43,9 +43,10 @@ def randomize(post_data):
     # Write Settings to Spoiler Log
     logdata += "Randomizer Settings" + "\n"
     logdata += "-------------------" + "\n"
-    logdata += "Level Progression Randomized: " + str(post_data.get("randomize_progression", "False")) + "\n"
     if post_data.get("randomize_progression"):
         logdata += "Seed: " + str(post_data.get("seed")) + "\n"
+    logdata += "Level Progression Randomized: " + str(post_data.get("randomize_progression", "False")) + "\n"
+    logdata += "Bonus Barrel Games Randomized: " + str(post_data.get("bonus_barrels_rando", "False")) + "\n"
     logdata += "All Kongs Unlocked: " + str(post_data.get("unlock_all_kongs", "False")) + "\n"
     logdata += "All Moves Unlocked: " + str(post_data.get("unlock_all_moves", "False")) + "\n"
     logdata += "Fairy Queen Camera + Shockwave: " + str(post_data.get("unlock_fairy_shockwave", "False")) + "\n"

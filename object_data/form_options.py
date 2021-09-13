@@ -4,6 +4,7 @@ from object_data.randomizer_options import (
     set_keys,
     set_troff_n_scoff,
     shuffle_progression,
+    shuffle_bonus_barrels,
     fairy_shockwave,
 )
 from object_data.objects import ASMPatch
@@ -161,5 +162,15 @@ asm_options = [
             - Story Skip option in the main menu set to On by default.""",
         content="Quality of Life Changes",
         checked=True,
+    ),
+    ASMPatch(
+        asm_file="null",
+        var_type="checkbox",
+        form_var="bonus_barrels_rando",
+        tab="misc",
+        title="""This option will randomize bonus barrel games for Golden Bananas and Hideout Helm.""",
+        content="Randomize Bonus Barrel Games",
+        checked=True,
+        function=shuffle_bonus_barrels.set_bonus_barrels,
     ),
 ]
