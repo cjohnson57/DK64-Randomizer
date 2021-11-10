@@ -3,6 +3,7 @@ from object_data.randomizer_options import (
     set_blockers,
     set_keys,
     set_troff_n_scoff,
+    shuffle_loading_zones,
     shuffle_progression,
     shuffle_bonus_barrels,
     fairy_shockwave,
@@ -172,5 +173,15 @@ asm_options = [
         content="Randomize Bonus Barrel Games",
         checked=True,
         function=shuffle_bonus_barrels.set_bonus_barrels,
+    ),
+    ASMPatch(
+        asm_file="null",
+        var_type="checkbox",
+        form_var="loading_zones_rando",
+        tab="misc",
+        title="""This option will randomize most loading zones in the game.""",
+        content="Randomize Loading Zones",
+        checked=True,
+        function=shuffle_loading_zones.set_loading_zones,
     ),
 ]
