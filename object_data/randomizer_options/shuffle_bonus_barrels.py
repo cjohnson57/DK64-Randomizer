@@ -1,5 +1,7 @@
 from object_data.bonus_barrel_data import bonus_barrels, barrel_locations
 import random
+import json
+from browser import window
 
 # Shuffle Bonus Barrels
 def set_bonus_barrels(asm: str, post_data: dict):
@@ -90,7 +92,10 @@ def set_bonus_barrels(asm: str, post_data: dict):
             }
             )
         barrelSpoilerLog.append(str(x) + " - " + str(pickRandomBarrelChunky))
-    
+
+    window.barrels = json.dumps(finalBarrelList);
+    #print(finalBarrelList)
+
     barrelSpoilerLog.sort()
     for x in barrelSpoilerLog:
         logdata += str(x) + "\n"

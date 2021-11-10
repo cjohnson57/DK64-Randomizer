@@ -5,9 +5,10 @@ from browser import bind, document, timer, window
 
 import common
 from randomize import randomize
+#from recompute_pointer_tables import pointer_tables, replaceROMFile, writeModifiedPointerTablesToROM, parsePointerTables, getFileInfo, make_safe_filename
 
 jq = window.jQuery
-
+bins = []
 
 @bind(document["nav-seed-gen-tab"], "click")
 @bind(document["nav-patch-tab"], "click")
@@ -47,7 +48,6 @@ def disable_input(event):
             pass
         document["input-file-rom_2"].id = "input-file-rom"
 
-
 def start_randomizing_seed(form_data: dict):
     """Randomize the seed data using the passed dict.
 
@@ -58,6 +58,8 @@ def start_randomizing_seed(form_data: dict):
     jq("#progress-text").text("Randomizing seed")
 
     def randomize_seed_data():
+        window.barrels = "[]";
+        bins = [];
         randomized_data = randomize(form_data)
         timer.set_timeout(lambda: finish_rando(randomized_data), 1000)
 
@@ -67,7 +69,6 @@ def start_randomizing_seed(form_data: dict):
         timer.set_timeout(lambda: finish_randomizing_seed(randomized_data, form_data), 1000)
 
     timer.set_timeout(randomize_seed_data, 1000)
-
 
 def finish_randomizing_seed(data, form_data):
     """Randomized Generation completed.
@@ -81,6 +82,7 @@ def finish_randomizing_seed(data, form_data):
         jq("#patchprogress").width("100%")
         jq("#progress-text").text("Failed to successfully generate a seed.")
     else:
+        
         if document["downloadjson"].checked:
 
             def save_lanky():
@@ -167,6 +169,9 @@ def start_apply_asm():
     window.romFile.convert()
     # Apply the BPS
     apply_bps()
+    # Write Compressed ROM Data
+    window.expand_rom_size(0x400000)
+    write_compresseddata_to_rom()
     max_addr = -1
     asm = str(window.asmcode)
     built_items = []
@@ -191,6 +196,21 @@ def start_apply_asm():
         window.patchedRom.fileName = "dk64-randomizer-" + document["seed"].value + ".z64"
         timer.set_timeout(window.patchedRom.save, 3000)
 
+def write_compresseddata_to_rom():
+    def writeBonusBarrels():
+        if len(json.loads(window.barrels)) > 0:
+                for x in json.loads(window.barrels):
+                    add_bin("setup",x["barrel_map_location"],x["bonus_id"],{
+                        "object_type": "actor",
+                        "action":"edit",
+                        "sub_type":"barrel",
+                        "dest_map":x["minigame_map_index"],
+                        "dest_exit":0,
+                    })
+                #print(json.loads(window.barrels))
+                print(bins)
+        recreate_pointer_tables();
+    writeBonusBarrels();
 
 def apply_bps():
     """Apply the BPS file to the rom."""
@@ -235,3 +255,128 @@ def apply_asm_bytes(addr, val):
         window.patchedRom.seek(0x2000000 + diff)
         window.patchedRom.writeU8(val)
         # print("Heap Shrink Space")
+
+def unzip_file(address,size):
+    window.pathedRom.seek(address);
+    compress = window.patchedRom.readBytes(size);
+    decompress = window.pako.inflate(compress);
+    return decompress
+
+def zip_file(address,data):
+    window.patchedRom.seek(address)
+    compress = window.pako.deflate(data)
+    window.pathcedRom.writeBytes(compress)
+
+def add_bin(type_,map_index,id_,data):
+    type_listed = False;
+    map_listed = False;
+    for x in bins:
+        if x["type"] == type_:
+            type_listed = True;
+            map_listed = False;
+            for y in x["data"]:
+                if y["map_index"] == map_index:
+                    map_listed = True;
+                    y["data"].append({
+                        "id_": id_,
+                        "data": data,
+                    })
+            if not map_listed:
+                x["data"].append({
+                    "map_index": map_index,
+                    "data": [
+                        {
+                            "id_": id_,
+                            "data": data,
+                        }
+                    ]
+                })
+    if not type_listed:
+        bins.append({
+            "type": type_,
+            "data": [
+                {
+                    "map_index": map_index,
+                    "data": [
+                        {
+                            "id_": id_,
+                            "data": data,
+                        }
+                    ]
+                }
+            ]
+        })
+
+vanilla_pointer_tables = [
+    {
+        "type": "setup",
+        "start": 0xD0E86C,
+        "index": 9,
+        "count": 221,
+    }
+];
+safe_write = 0x02200000
+
+def lstToInt(lst):
+    total = 0;
+    for x in lst:
+        total *= 256;
+        total += x;
+    return total
+
+def reverse(lst):
+    return [ele for ele in reversed(lst)]
+
+def intToLst(int_,cap):
+    lst = [];
+    while (cap > 0):
+        offset = int_ % 256;
+        lst.append(offset)
+        int_ -= offset;
+        int_ /= 256;
+        cap -= 1;
+    return reverse(lst)
+
+def recreate_pointer_tables():
+    print("Modifying Pointer Tables")
+    new_start = safe_write;
+    print(len(bins))
+    if len(bins) > 0:
+        #parsePointerTables();
+        print("Finished parsing pointer tables")
+        #print(json.loads(window.pointer_tables))
+
+    for x in bins:
+       #print(x)
+        for pointer_table in vanilla_pointer_tables:
+            if x["type"] == pointer_table["type"]:
+                # data_start = new_start + ((pointer_table["count"] + 1) * 4)
+                # data_pointer = data_start;
+                # table_pointer = new_start;
+                # print(pointer_table)
+                for pointer_item in range(pointer_table["count"]):
+                #     addr = pointer_table["start"] + (4 * pointer_item)
+                #     window.patchedRom.seek(int(addr))
+                #     ptr_addr = lstToInt(window.patchedRom.readBytes(4)) + 0x101C50;
+                #     window.patchedRom.seek(int(addr + 4))
+                #     end_addr = lstToInt(window.patchedRom.readBytes(4)) + 0x101C50;
+                #     size = end_addr - ptr_addr;
+                #     print(hex(pointer_item) + ": " + hex(addr) + "|" + hex(ptr_addr) + ">" + hex(end_addr))
+                    map_edited = False;
+                    for _item in x["data"]:
+                        if _item["map_index"] == pointer_item:
+                            map_edited = True;
+                #     if not map_edited:
+                #         window.patchedRom.seek(int(ptr_addr))
+                #         old_bytes = window.patchedRom.readBytes(size)
+                #         window.patchedRom.seek(data_pointer)
+                #         window.patchedRom.writeBytes(old_bytes)
+                #         window.patchedRom.seek(table_pointer);
+                #         print(hex(pointer_item) + ": " + hex(addr) + "|" + hex(ptr_addr) + ">" + hex(end_addr) + "|" + hex(table_pointer) + ">" + hex(data_pointer))
+                #         window.patchedRom.writeBytes(intToLst(data_pointer - 0x101C50,4))
+                #         data_pointer += size;
+                #         table_pointer += 4;
+                # window.patchedRom.seek(0x101C50 + (4 * pointer_table["index"]))
+                # window.patchedRom.writeBytes(intToLst(new_start - 0x101C50,4))
+                # new_start = data_pointer + (4 - (data_pointer % 4))
+    
